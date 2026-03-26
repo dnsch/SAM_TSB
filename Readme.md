@@ -170,9 +170,8 @@ python third_party/utils/loss_landscape/plot_surface.py --mpi --cuda --x=-1:1:20
 --vmax=0.5 --vlevel=0.01 \
 --model_file results/samformer/ETTh1/seq_len_512_pred_len_96_bs_256_rho_0.5/final_model_s1.pt \
 --dir_type weights --xnorm filter --xignore biasbn \
---ynorm filter --yignore biasbn --plot \
---dataset samformer_datasets --model samformer \
---loss_name mse --dataset_name ETTh1
+--ynorm filter --yignore biasbn --plot --model samformer \
+--ts_dataset_name ETTh1 -c --loss_name mse
 ```
 
 The resulting plot will be saved in the 📁 `plots/loss_surface/` directory of the model.

@@ -1,0 +1,139 @@
+from __future__ import annotations
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from src.base.model import BaseModel
+
+from .layers import MixerLayer, TimeBatchNorm2d, feature_to_time, time_to_feature
+
+
+class TSMixer(BaseModel):
+    """TSMixer model for time series forecasting.
+
+    This model uses a series of mixer layers to process time series data,
+    followed by a linear transformation to project the output to the desired
+    prediction length.
+
+    Args:
+        input_channels: Number of input channels/features.
+        seq_len: Length of the input time series sequence.
+        pred_len: Desired length of the output prediction sequence.
+        output_channels: Number of output channels.
+        activation_fn: Activation function to use. Defaults to "relu".
+        num_blocks: Number of mixer blocks. Defaults to 2.
+        dropout_rate: Dropout rate for regularization. Defaults to 0.1.
+        ff_dim: Dimension of feedforward network inside mixer layer. Defaults to 64.
+        normalize_before: Whether to apply layer normalization before or after mixer layer.
+        norm_type: Type of normalization to use. "batch" or "layer". Defaults to "batch".
+    """
+
+    def __init__(
+        self,
+        input_channels: int,
+        output_channels: int,
+        seq_len=96,
+        pred_len=96,
+        activation_fn="relu",
+        num_blocks=2,
+        dropout_rate=0.1,
+        ff_dim=64,
+        normalize_before=True,
+        norm_type="batch",
+        **kwargs,
+    ):
+        # Pass input_channels, seq_len and pred_len to BaseModel
+        super().__init__(
+            input_channels=input_channels,
+            seq_len=seq_len,
+            pred_len=pred_len,
+        )
+
+        self.output_channels = output_channels
+
+        # Transform activation_fn to callable
+        activation_fn_callable = getattr(F, activation_fn)
+
+        # Transform norm_type to callable
+        assert norm_type in {
+            "batch",
+            "layer",
+        }, f"Invalid norm_type: {norm_type}, must be one of batch, layer."
+        norm_type_cls = TimeBatchNorm2d if norm_type == "batch" else nn.LayerNorm
+
+        # Build mixer layers
+        self.mixer_layers = self._build_mixer(
+            num_blocks,
+            input_channels,
+            self.output_channels,
+            ff_dim=ff_dim,
+            activation_fn=activation_fn_callable,
+            dropout_rate=dropout_rate,
+            sequence_length=seq_len,
+            normalize_before=normalize_before,
+            norm_type=norm_type_cls,
+        )
+
+        # Temporal projection layer
+        self.temporal_projection = nn.Linear(seq_len, pred_len)
+
+        # Initialize weights
+        self._init_weights()
+
+    def _build_mixer(self, num_blocks: int, input_channels: int, output_channels: int, **kwargs):
+        """Build the mixer blocks for the model.
+
+        Args:
+            num_blocks: Number of mixer blocks to be built.
+            input_channels: Number of input channels for the first block.
+            output_channels: Number of output channels for the last block.
+            **kwargs: Additional keyword arguments for mixer layer configuration.
+
+        Returns:
+            nn.Sequential: Sequential container of mixer layers.
+        """
+        channels = [input_channels] * (num_blocks - 1) + [output_channels]
+
+        return nn.Sequential(
+            *[
+                MixerLayer(input_channels=in_ch, output_channels=out_ch, **kwargs)
+                for in_ch, out_ch in zip(channels[:-1], channels[1:])
+            ]
+        )
+
+    def forward(self, x_hist: torch.Tensor, flatten_output=False) -> torch.Tensor:
+        """Forward pass of the TSMixer model.
+
+        Args:
+            x_hist: Input time series tensor (batch_size, seq_len,
+            input_channels).
+            flatten_output: Whether to flatten the output. Defaults to False.
+
+        Returns:
+            Output tensor (batch_size, pred_len, output_channels) or flattened.
+        """
+
+        # Note: If use_revin, then x_hist is already revin normalized
+        # Mixer layers
+        x = self.mixer_layers(x_hist)
+
+        # Temporal projection
+        x_temp = feature_to_time(x)
+        x_temp = self.temporal_projection(x_temp)
+        x = time_to_feature(x_temp)
+
+        # Flatten output if requested
+        if flatten_output:
+            return x.reshape([x.shape[0], x.shape[1] * x.shape[2]])
+        else:
+            return x
+
+
+if __name__ == "__main__":
+    m = TSMixer(input_channels=2, seq_len=10, pred_len=5, output_channels=4)
+    x = torch.randn(3, 10, 2)
+    y = m(x)
+    print(f"Input shape: {x.shape}")
+    print(f"Output shape: {y.shape}")
+    print(f"Parameters: {m.param_num():,}")

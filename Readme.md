@@ -166,7 +166,7 @@ python code/experiments/[type]/[model]/main.py --help
 
 #### Exploring the Loss Landscape
 
-This repository includes a modified version of [loss-landscape](https://github.com/tomgoldstein/loss-landscape) for approximations of the loss surface.
+This repository includes a modified version of [loss-landscape](https://github.com/dnsch/loss-landscape) for approximations of the loss surface.
 
 To generate a loss surface plot in a `1x1` region around a trained model’s local minimum with a resolution of `20x20`, run:
 

@@ -115,6 +115,8 @@ COPY --from=data-downloader /data /data
 RUN git clone https://github.com/dnsch/pyhessian.git /third_party/utils/pyhessian && \
     git clone https://github.com/dnsch/loss_landscape.git /third_party/utils/loss_landscape
 
+RUN chmod -R 777 /opt/venv
+
 # Include third_party paths for internal imports
 
 ENV PYTHONPATH="/app:/third_party/utils/pyhessian:/third_party/utils/loss_landscape"

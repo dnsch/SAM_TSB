@@ -12,7 +12,7 @@ To clone this repository with the necessary modified submodules use the
 following command in your terminal:
 
 ```bash
-git clone --recurse-submodules https://github.com/dnsch/sam_experiments.git
+git clone --recurse-submodules [https://github.com/dnsch/sam_experiments.git](https://github.com/dnsch/SAM_TSB.git)
 ```
 
 #### Replicating Results

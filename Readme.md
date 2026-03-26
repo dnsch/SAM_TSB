@@ -45,14 +45,14 @@ You can also run the models individually with many arguments for hyperparemeter
 tuning.
 
 ```bash
-docker run --rm --gpus all   --user $(id -u):$(id -g)   -v $(pwd):/app   samtsb_gpu  python experiments/single_split/patchtst/patchtst.py --dataset ETTh1
+docker run --rm --gpus all   --user $(id -u):$(id -g)   -v $(pwd):/app   samtsb_gpu  python experiments/single_split/samformer/samformer.py --dataset ETTh1
 ```
 
-for example launches the base patchtst model with default arguments using the
+for example launches the base samformer (simple transformer) model with default arguments using the
 ETTh1 dataset. The help flag at the end of the command:
 
 ```bash
-docker run --rm --gpus all   --user $(id -u):$(id -g)   -v $(pwd):/app   samtsb_gpu  python experiments/single_split/patchtst/patchtst.py --dataset ETTh1 --help
+docker run --rm --gpus all   --user $(id -u):$(id -g)   -v $(pwd):/app   samtsb_gpu  python experiments/single_split/samformer/samformer.py --dataset ETTh1 --help
 ```
 
 will display all possible arguments for the specific model.
@@ -63,11 +63,16 @@ run for example:
 
 
 ```bash
-docker run --rm --gpus all   --user $(id -u):$(id -g)   -v $(pwd):/app   samtsb_gpu   python third_party/utils/loss_landscape/plot_surface.py --x=-1:1:30 --y=-1:1:30 --vmax=2 --vlevel=0.001 --model_file path/to/final_model_s1.pt --dir_type weights --xnorm filter --ynorm filter  --plot --model patchtst --ts_dataset_name ETTh1 -c --loss_name mse
+docker run --rm --gpus all   --user $(id -u):$(id -g)   -v $(pwd):/app   samtsb_gpu   python third_party/utils/loss_landscape/plot_surface.py --x=-1:1:30 --y=-1:1:30 --vmax=2 --vlevel=0.001 --model_file results/single_split/samformer/base/ETTh1/seq_len_512_pred_len_96_bs_256/seed_1/final_model_s1.pt --dir_type weights --xnorm filter --ynorm filter  --plot --model samformer --ts_dataset_name ETTh1 -c --loss_name mse
 ```
 
 
-to plot the loss landscape of the patchtst model using the ETTh1 dataset. For
+to plot the loss landscape of the samformer model using the ETTh1 dataset you created via the
+
+```bash
+docker run --rm --gpus all   --user $(id -u):$(id -g)   -v $(pwd):/app   samtsb_gpu  python experiments/single_split/samformer/samformer.py --dataset ETTh1 --help
+```
+command. For
 details check the original repository (see below).
 
 
@@ -115,7 +120,7 @@ Once the data is downloaded and placed in the correct directories, you can run t
 The general command to train and test a model is:
 
 ```bash
-python code/experiments/[type]/[model]/main.py
+python code/experiments/[type]/[model]/[model].py
 ```
 
 where `[model]` refers to the model you want to use and `[type]` is the scenario
